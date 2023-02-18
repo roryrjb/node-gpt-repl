@@ -3,13 +3,20 @@
 const HISTORY_FILE = ".node-gpt-history";
 
 const { existsSync, readFileSync, writeFileSync } = require("fs");
+
+// Node.js somewhere will require the 'debug' module at runtime, I guess
+// it just checks for its existence, for now it's just easier to include
+// this as a dependency
 const debug = require("debug")("node-gpt");
+
 const { execSync } = require("child_process");
 const repl = require("repl");
 const { Configuration, OpenAIApi } = require("openai");
 const Module = require("module");
 const originalRequire = Module.prototype.require;
 
+// override the built-in 'require' so if we get a MODULE_NOT_FOUND error
+// then just npm install and hope for the best!
 Module.prototype.require = function () {
   try {
     return originalRequire.apply(this, arguments);
@@ -35,10 +42,13 @@ function getHistory() {
   }
 }
 
+// TODO: needs a lot of tweaking
 function generatePrompt(linePartial, history) {
   return `With the following code already entered: "${history}". Suggest a completion for the following partial JavaScript code in the Node.js REPL: ${linePartial}`;
 }
 
+// due to the auto-npm install feature, it's just easier to write these
+// files upfront, it just saves on some debug output
 if (!existsSync("./package.json")) {
   writeFileSync("./package.json", JSON.stringify({}));
 }
@@ -53,6 +63,7 @@ const server = repl.start({
   completer(linePartial, callback) {
     openai
       .createCompletion({
+        // TODO: make this configurable
         model: "text-davinci-003",
         prompt: generatePrompt(linePartial, getHistory()),
         temperature: 0.6,
