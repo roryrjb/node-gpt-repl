@@ -3,7 +3,7 @@
   "bin": {
     "node-gpt": "node-gpt"
   },
-  "version": "1.0.1",
+  "version": "1.0.2",
   "license": "ISC",
   "author": {
     "name": "Rory Bradford",
