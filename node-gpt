@@ -1,0 +1,74 @@
+#!/usr/bin/env node
+
+const HISTORY_FILE = ".node-gpt-history";
+
+const { existsSync, readFileSync, writeFileSync } = require("fs");
+const debug = require("debug")("node-gpt");
+const { execSync } = require("child_process");
+const repl = require("repl");
+const { Configuration, OpenAIApi } = require("openai");
+const Module = require("module");
+const originalRequire = Module.prototype.require;
+
+Module.prototype.require = function () {
+  try {
+    return originalRequire.apply(this, arguments);
+  } catch (e) {
+    if (e.code === "MODULE_NOT_FOUND") {
+      const command = `npm install ${arguments[0]}`;
+      execSync(command);
+      return originalRequire.apply(this, arguments);
+    } else {
+      throw e;
+    }
+  }
+};
+
+const configuration = new Configuration({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAIApi(configuration);
+
+function getHistory() {
+  try {
+    return readFileSync(HISTORY_FILE, "utf8");
+  } catch (_) {
+    return "";
+  }
+}
+
+function generatePrompt(linePartial, history) {
+  return `With the following code already entered: "${history}". Suggest a completion for the following partial JavaScript code in the Node.js REPL: ${linePartial}`;
+}
+
+if (!existsSync("./package.json")) {
+  writeFileSync("./package.json", JSON.stringify({}));
+}
+
+if (!existsSync("./package-lock.json")) {
+  writeFileSync("./package-lock.json", JSON.stringify({}));
+}
+
+const server = repl.start({
+  prompt: "node-gpt> ",
+  preview: false,
+  completer(linePartial, callback) {
+    openai
+      .createCompletion({
+        model: "text-davinci-003",
+        prompt: generatePrompt(linePartial, getHistory()),
+        temperature: 0.6,
+      })
+      .then((res) => {
+        callback(null, [
+          res.data.choices.map((c) => linePartial + c.text.trim()),
+          linePartial,
+        ]);
+      })
+      .catch((err) => {
+        console.error();
+        console.error(err.message);
+        callback(null, [[], linePartial]);
+      });
+  },
+});
+
+server.setupHistory(HISTORY_FILE, () => {});

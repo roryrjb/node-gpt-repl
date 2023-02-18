@@ -1,0 +1,17 @@
+{
+  "name": "node-gpt-repl",
+  "bin": {
+    "node-gpt": "node-gpt"
+  },
+  "version": "1.0.0",
+  "license": "ISC",
+  "author": {
+    "name": "Rory Bradford",
+    "email": "roryrjb@gmail.com"
+  },
+  "dependencies": {
+    "debug": "^4.3.4",
+    "express": "^4.18.2",
+    "openai": "^3.1.0"
+  }
+}
