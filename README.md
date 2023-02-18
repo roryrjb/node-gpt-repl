@@ -7,7 +7,7 @@
 ## Installation
 
 ```
-$ npm install -g node-repl-gpt
+$ npm install -g node-gpt-repl
 ```
 
 ## Usage
